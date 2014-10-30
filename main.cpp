@@ -1,8 +1,9 @@
 #include <iostream>
 #include <stdlib.h>
 #include <stdio.h>
-using namespace std;
+#include <queue>
 
+using namespace std;
 
 class timer {
 public:
@@ -46,6 +47,8 @@ void link_elems_norm(elem<padding_size> *array, size_t size) {
     for (size_t i = 1; i < size; ++i) {
         array[i-1].next = array + i;
     }
+
+    array[size-1].next = array;
 }
 
 template <int padding_size>
@@ -83,61 +86,67 @@ void link_elems_rand(elem<padding_size> *array, size_t size) {
 }
 
 
-void print_size(size_t size) {
-    /*if (size < 1024) {
-        printf("%.2f B", (float)size);
-        return;
-    }*/
-
-    //if (size < 1024 * 1024) {
-        printf("%.2f", size / 1024.0);
-        return;
-    //}
-
-    /*if (size < 1024 * 1024 * 1024) {
-        printf("%.2f MB", size / 1024.0 / 1024.0);
-        return;
+template <int padding_size>
+size_t test_step(size_t current_size) {
+    size_t tmp = (size_t)((double)current_size * 0.005);
+    if (tmp == 0) {
+        tmp += 1;
     }
 
-    printf("%.2f GB", size / 1024.0 / 1024.0 / 1024.0);*/
+    return tmp;
 }
 
 
-#define DO_2(x) x x
-#define DO_4(x) DO_2(DO_2(x))
+#define DO_4(x) x x x x
 #define DO_16(x) DO_4(DO_4(x))
 #define DO_256(x) DO_16(DO_16(x))
 
 
 template <int padding_size>
-void test_array(size_t min_size, size_t max_size, size_t step_size, void (*link_func)(elem<padding_size>*, size_t)) {
-    for (size_t current_size = min_size; current_size <= max_size; current_size += step_size) {
+void test_array(size_t min_size, size_t max_size, size_t (*step_func)(size_t), void (*link_func)(elem<padding_size>*, size_t)) {
+
+    const int antialising_cycle_count = 3;
+
+    for (size_t current_size = min_size; current_size <= max_size; current_size += step_func(current_size)) {
         elem<padding_size> *array = new elem<padding_size>[current_size];
         auto elem = array;
-        link_func(array, current_size);
 
-        timer t(true);
-        DO_256( elem = elem->next; )
-        t.stop();
+        double dt = 0;
 
-        print_size(current_size);
-        double dt = t.time(1);
-        printf("  %.0f\n", dt);
+        for (int k = 0; k < antialising_cycle_count; ++k) {
+            link_func(array, current_size);
+
+            timer t(true);
+            DO_256( elem = elem->next; )
+            t.stop();
+
+            dt += t.time(1);
+        }
+        dt /= antialising_cycle_count;
+
+        printf("%zd  %.0f", current_size * padding_size / 1024, dt);
+        printf("\n");
 
         delete [] array;
     }
+
 }
 
 
 int main() {
     srand((unsigned int)time(NULL));
 
-    test_array<1024>(1 * 1024, 5 * 1024 * 1024, 1024, link_elems_norm);
+    test_array<60>(1, 1024 * 1024, test_step<60>, link_elems_norm<60>);
 
     return 0;
 }
 
-
+// notebook
 // 128 KB
 // 512 KB
 // 3072 KB
+
+// pc
+// 64 KB
+// 1024 KB
+// 8192 KB
