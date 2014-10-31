@@ -38,7 +38,7 @@ private:
 template <int padding_size>
 struct elem {
     elem *next = nullptr;
-    char padding[padding_size];
+    volatile char padding[padding_size];
 };
 
 
@@ -88,12 +88,11 @@ void link_elems_rand(elem<padding_size> *array, size_t size) {
 
 template <int padding_size>
 size_t test_step(size_t current_size) {
-    size_t tmp = (size_t)((double)current_size * 0.005);
-    if (tmp == 0) {
-        tmp += 1;
+    if (current_size < 100) {
+        return 10;
     }
 
-    return tmp;
+    return (size_t)((double)current_size * 0.1);
 }
 
 
@@ -136,7 +135,7 @@ void test_array(size_t min_size, size_t max_size, size_t (*step_func)(size_t), v
 int main() {
     srand((unsigned int)time(NULL));
 
-    test_array<60>(1, 1024 * 1024, test_step<60>, link_elems_norm<60>);
+    test_array<60>(1, 1024 * 196, test_step<60>, link_elems_rand<60>);
 
     return 0;
 }
