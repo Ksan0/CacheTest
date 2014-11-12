@@ -1,8 +1,4 @@
 #include <iostream>
-#include <stdlib.h>
-#include <stdio.h>
-#include <queue>
-
 using namespace std;
 
 class timer {
@@ -13,17 +9,17 @@ public:
         }
     }
     void start() {
-        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &_begin);
+        clock_gettime(CLOCK_REALTIME, &_begin);
     }
     void stop() {
-        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &_end);
+        clock_gettime(CLOCK_REALTIME, &_end);
     }
     double time(int format = 0) {
-        if (format == 0) {
+        if (format == 0) { // sec
             return (_end.tv_sec + _end.tv_nsec * 1.e-9) - (_begin.tv_sec + _begin.tv_nsec * 1.e-9);
         }
 
-        if (format == 1) {
+        if (format == 1) {  // nanosec
             return (double)(_end.tv_sec - _begin.tv_sec) * 1.e9 + (_end.tv_nsec - _begin.tv_nsec);
         }
 
@@ -108,11 +104,10 @@ void test_array(size_t min_size, size_t max_size, size_t (*step_func)(size_t), v
 
     for (size_t current_size = min_size; current_size <= max_size; current_size += step_func(current_size)) {
         elem<padding_size> *array = new elem<padding_size>[current_size];
-        auto elem = array;
 
         double dt = 0;
-
         for (int k = 0; k < antialising_cycle_count; ++k) {
+            auto elem = array;
             link_func(array, current_size);
 
             timer t(true);
@@ -123,7 +118,7 @@ void test_array(size_t min_size, size_t max_size, size_t (*step_func)(size_t), v
         }
         dt /= antialising_cycle_count;
 
-        printf("%zd  %.0f", current_size * padding_size / 1024, dt);
+        printf("%f  %.0f", current_size * padding_size / 1024.0, dt / 256.0);
         printf("\n");
 
         delete [] array;
